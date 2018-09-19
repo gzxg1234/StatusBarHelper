@@ -1,35 +1,13 @@
-apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
-version = "1.0.0"
-android {
-    compileSdkVersion 27
-    resourcePrefix "sbh_"
-    defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 27
-        versionCode 1
-        versionName "1.0"
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-
-}
-
-dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.android.support:support-v4:27.1.1'
-}
-
 def siteUrl = 'https://github.com/gzxg1234/StatusBarHelper'      // 项目的主页
 def gitUrl = 'https://github.com/gzxg1234/StatusBarHelper.git'
+def NAME = 'statusbarhelper'
+def REPO = "lib"
+def ORG = "sanron"
 group = "com.sanron.lib"
+version = "1.0.0"
 install {
     repositories.mavenInstaller {
         // This generates POM.xml with proper parameters
@@ -48,7 +26,7 @@ install {
                 }
                 developers {
                     developer {
-                        id 'sanron'        //填写的一些基本信息
+                        id 'sanron'
                         name 'sanron'
                         email 'sanronjun@163.com'
                     }
@@ -69,6 +47,7 @@ task sourcesJar(type: Jar) {
 task javadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
     classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    options.encoding = "UTF-8"
 }
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
@@ -85,9 +64,9 @@ bintray {
     key = properties.getProperty("bintray.apikey")
     configurations = ['archives']
     pkg {
-        userOrg = "sanron"//JCenter上创建的的Organization
-        repo = "lib"//你要上传的库的名字
-        name = "StatusBarHelper"    //发布到JCenter上的项目名字
+        userOrg = ORG
+        repo = REPO
+        name = NAME
         websiteUrl = siteUrl
         vcsUrl = gitUrl
         licenses = ["Apache-2.0"]
