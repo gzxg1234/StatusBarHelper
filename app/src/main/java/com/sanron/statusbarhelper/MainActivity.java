@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
         mSwitchDark.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                StatusBarHelper.with(MainActivity.this).setDarkIconOrScrim(isChecked, 0.3f);
+                StatusBarHelper.with(MainActivity.this).setDarkIcon(0.3f);
             }
         });
     }

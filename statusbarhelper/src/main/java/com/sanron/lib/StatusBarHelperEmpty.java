@@ -1,10 +1,7 @@
 package com.sanron.lib;
 
 import android.app.Activity;
-import android.support.v4.app.Fragment;
 import android.view.View;
-
-import com.sanron.lib.StatusBarHelper;
 
 /**
  * Created by chenrong on 2017/9/21.
@@ -38,12 +35,17 @@ class StatusBarHelperEmpty extends StatusBarHelper {
     }
 
     @Override
-    public StatusBarHelper setDarkIconOrScrim(boolean dark, float alpha) {
+    public StatusBarHelper setDarkIcon(float scrimAlpha) {
         return this;
     }
 
     @Override
-    public StatusBarHelper setDarkIconOrScrim(boolean dark) {
+    public StatusBarHelper setDarkIcon() {
+        return this;
+    }
+
+    @Override
+    public StatusBarHelper setLightIcon() {
         return this;
     }
 
@@ -54,11 +56,6 @@ class StatusBarHelperEmpty extends StatusBarHelper {
 
     @Override
     public StatusBarHelper setLayoutFullScreen(boolean fullScreen) {
-        return this;
-    }
-
-    @Override
-    public StatusBarHelper setScrimAlpha(float alpha) {
         return this;
     }
 

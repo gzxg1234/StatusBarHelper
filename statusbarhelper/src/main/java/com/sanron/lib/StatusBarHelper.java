@@ -53,13 +53,6 @@ public class StatusBarHelper {
     //是否暗色图标
     private boolean mDarkIcon = false;
 
-    //暗色图标设置失败 标识
-    private boolean mDarkFailedFlag = false;
-
-    //设置暗色图标失败时的默认遮罩透明度
-    private static final float DEFAULT_FAILED_SCRIM = 0.2f;
-
-
     //需要添加padding的view
     private WeakList<View> mNeedPaddingView = new WeakList<>();
 
@@ -139,12 +132,12 @@ public class StatusBarHelper {
         setLayoutFullScreen(state.layoutFullScreen);
         setStatusBarDarkIcon(state.darkIcon);
         setScrimAlpha(state.scrimAlpha);
-        mDarkFailedFlag = state.setDarkFailedFlag;
         return this;
     }
 
     /**
      * 保存当前状态
+     *
      * @param tag
      * @return
      */
@@ -153,7 +146,6 @@ public class StatusBarHelper {
         tagState.darkIcon = mDarkIcon;
         tagState.layoutFullScreen = mLayoutFullScreen;
         tagState.scrimAlpha = mScrimAlpha;
-        tagState.setDarkFailedFlag = mDarkFailedFlag;
         tagState.statusBarColor = mStatusBarColor;
         mStates.put(tag, tagState);
         return this;
@@ -167,7 +159,7 @@ public class StatusBarHelper {
     /**
      * 设置状态栏颜色
      *
-     * @param color
+     * @param color 颜色
      * @return
      */
     public StatusBarHelper setStatusBarColor(int color) {
@@ -180,7 +172,7 @@ public class StatusBarHelper {
     /**
      * 布局是否延伸到状态栏
      *
-     * @param fullScreen
+     * @param fullScreen true布局延伸到状态栏下
      * @return
      */
     public StatusBarHelper setLayoutFullScreen(boolean fullScreen) {
@@ -202,12 +194,12 @@ public class StatusBarHelper {
     }
 
     /**
-     * 黑色遮罩透明度
+     * 设置黑色遮罩
      *
-     * @param alpha
+     * @param alpha 透明度
      * @return
      */
-    public StatusBarHelper setScrimAlpha(float alpha) {
+    private StatusBarHelper setScrimAlpha(float alpha) {
         if (mScrimAlpha == alpha) {
             return this;
         }
@@ -368,21 +360,35 @@ public class StatusBarHelper {
     /**
      * 设置状态栏暗色图标
      *
-     * @param dark
-     * @param alpha 设置失败添加遮罩的透明度
+     * @param scrimAlpha 设置失败添加遮罩的透明度
      * @return
      */
-    public StatusBarHelper setDarkIconOrScrim(boolean dark, float alpha) {
-        boolean success = setStatusBarDarkIcon(dark);
-        if (!success && dark) {
-            mDarkFailedFlag = true;
-            setScrimAlpha(alpha);
+    public StatusBarHelper setDarkIcon(float scrimAlpha) {
+        boolean success = setStatusBarDarkIcon(true);
+        if (!success) {
+            setScrimAlpha(scrimAlpha);
         }
         return this;
     }
 
-    public StatusBarHelper setDarkIconOrScrim(boolean dark) {
-        return setDarkIconOrScrim(dark, DEFAULT_FAILED_SCRIM);
+    /**
+     * 设置状态栏暗色图标
+     *
+     * @return this
+     */
+    public StatusBarHelper setDarkIcon() {
+        return setDarkIcon(0);
+    }
+
+    /**
+     * 设置状态栏亮色色图标
+     *
+     * @return this
+     */
+    public StatusBarHelper setLightIcon() {
+        setStatusBarDarkIcon(false);
+        setScrimAlpha(0f);
+        return this;
     }
 
     /**
@@ -390,12 +396,6 @@ public class StatusBarHelper {
      */
     public boolean setStatusBarDarkIcon(boolean dark) {
         mDarkIcon = dark;
-
-        //在设置黑色图标失败，恢复白色时去除替代的黑色遮罩
-        if (!dark && mDarkFailedFlag) {
-            setScrimAlpha(0f);
-            mDarkFailedFlag = false;
-        }
 
         boolean success = false;
         Window window = getWindow();
@@ -549,8 +549,6 @@ public class StatusBarHelper {
         private float scrimAlpha;
 
         private boolean darkIcon;
-
-        private boolean setDarkFailedFlag;
 
         public TagState(String tag) {
             this.tag = tag;

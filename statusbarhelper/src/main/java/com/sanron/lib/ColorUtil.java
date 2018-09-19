@@ -43,7 +43,7 @@ public class ColorUtil {
      * @param alpha alpha值
      * @return 最终的状态栏颜色
      */
-    private static int calculateStatusColor(@ColorInt int color, float alpha) {
+    public static int calculateStatusColor(@ColorInt int color, float alpha) {
         if (alpha >= 1) {
             return color;
         }
