@@ -3,9 +3,9 @@ apply plugin: 'com.jfrog.bintray'
 
 def siteUrl = 'https://github.com/gzxg1234/StatusBarHelper'      // 项目的主页
 def gitUrl = 'https://github.com/gzxg1234/StatusBarHelper.git'
-def NAME = 'statusbarhelper'
-def REPO = "lib"
-def ORG = "sanron"
+def NAME = 'StatusBarHelper'
+def REPO = "library"
+def ORG = "sanronjun"
 group = "com.sanron.lib"
 version = "1.0.0"
 install {
@@ -17,18 +17,11 @@ install {
                 // Add your description here
                 name 'Android StatusBarHelper'   //项目描述
                 url siteUrl
-                // Set your license
-                licenses {
-                    license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
                 developers {
                     developer {
                         id 'sanron'
                         name 'sanron'
-                        email 'sanronjun@163.com'
+                        email 'sanronjun@gmail.com'
                     }
                 }
                 scm {
