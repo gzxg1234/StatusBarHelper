@@ -2,6 +2,7 @@ package com.sanron.lib;
 
 import android.app.Activity;
 import android.view.View;
+import android.view.Window;
 
 /**
  * Created by chenrong on 2017/9/21.
@@ -9,7 +10,7 @@ import android.view.View;
 
 class StatusBarHelperEmpty extends StatusBarHelper {
 
-    StatusBarHelperEmpty(Activity activity) {
+    StatusBarHelperEmpty(Window activity) {
         super(activity);
     }
 

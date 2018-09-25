@@ -1,15 +1,17 @@
 package com.sanron.lib;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
-import android.os.Environment;
+import android.support.annotation.Nullable;
+import android.util.Log;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Properties;
-import java.util.Set;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * 系统帮助类
@@ -23,42 +25,30 @@ public class OSUtil {
         FLYME,
         //小米MIUI
         MIUI,
+        //华为EMUI
+        EMUI,
         //其他
         OTHER
     }
 
-    private static Method GET_METHOD;
-    private static Properties BUILD_PROPERTIES;
     private static OS MY_OS;
 
-    private static String[] FLYME_KEY = {"ro.meizu.product.model", "ro.meizu.security", "ro.meizu.region.enable"};
-    private static String[] FLYME_KEY_WORD = {"flyme", "meizu"};
+
+    private static Method GET_METHOD;
+
+    private static final String KEY_EMUI_VERSION_NAME = "ro.build.version.emui";
+
+    private static String[] FLYME_KEY = {"ro.meizu.product.model", "ro.meizu.security",
+            "ro.meizu.region.enable", "ro.flyme.published"};
 
     private static String[] MIUI_KEY = {"ro.miui.ui.version.code", "ro.miui.ui.version.name", "ro.miui.internal.storage"};
-    private static String[] MIUI_KEY_WORD = {"miui"};
 
     private static final String MIUI_VERSION_KEY = "ro.miui.ui.version.name";
 
     static {
-        FileInputStream fileInputStream = null;
         try {
-            fileInputStream = new FileInputStream(new File(Environment.getRootDirectory(), "build.prop"));
-            BUILD_PROPERTIES = new Properties();
-            BUILD_PROPERTIES.load(fileInputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (fileInputStream != null) {
-                try {
-                    fileInputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        try {
-            Class clazz = Class.forName("SystemProperties");
+            @SuppressLint("PrivateApi")
+            Class clazz = Class.forName("android.os.SystemProperties");
             GET_METHOD = clazz.getDeclaredMethod("get", String.class);
             GET_METHOD.setAccessible(true);
         } catch (NoSuchMethodException e) {
@@ -66,12 +56,11 @@ public class OSUtil {
         }
 
         if (Build.MANUFACTURER.equals("Meizu")
-                || hasProperties(FLYME_KEY)
-                || hasPropertyForWord(FLYME_KEY_WORD)) {
+                || Build.DISPLAY.toLowerCase().contains("flyme")
+                || hasProperties(FLYME_KEY)) {
             MY_OS = OS.FLYME;
         } else if (Build.MANUFACTURER.equals("Xiaomi")
-                || hasProperties(MIUI_KEY)
-                || hasPropertyForWord(MIUI_KEY_WORD)) {
+                || hasProperties(MIUI_KEY)) {
             MY_OS = OS.MIUI;
         } else {
             MY_OS = OS.OTHER;
@@ -97,6 +86,37 @@ public class OSUtil {
     }
 
     /**
+     * 是否emui
+     *
+     * @return
+     */
+    public static boolean isEMUI() {
+        return MY_OS == OS.EMUI;
+    }
+
+    /**
+     * 是否emui3.1
+     * @return
+     */
+    public static boolean isEMUI3_1() {
+        String version = getEMUIVersion();
+        if (version != null) {
+            return "EmotionUI 3".equals(version) || version.contains("EmotionUI_3.1");
+        }
+        return false;
+    }
+
+    /**
+     * 得到emui的版本
+     * Gets emui version.
+     *
+     * @return the emui version
+     */
+    private static String getEMUIVersion() {
+        return isEMUI() ? getProperty(KEY_EMUI_VERSION_NAME) : null;
+    }
+
+    /**
      * 获取miui版本
      *
      * @return
@@ -114,28 +134,6 @@ public class OSUtil {
         return -1;
     }
 
-
-    /**
-     * 是否有包含word的key存在
-     *
-     * @param words
-     * @return
-     */
-    private static boolean hasPropertyForWord(String... words) {
-        if (BUILD_PROPERTIES != null) {
-            Set<Object> keys = BUILD_PROPERTIES.keySet();
-            for (Object key : keys) {
-                if (key instanceof String) {
-                    for (String word : words) {
-                        if (((String) key).contains(word)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
 
     /**
      * 是否有key
@@ -163,9 +161,29 @@ public class OSUtil {
                 e.printStackTrace();
             }
         }
-        if (BUILD_PROPERTIES != null) {
-            return BUILD_PROPERTIES.getProperty(key);
+        return getPropCmd(key);
+    }
+
+    private static String getPropCmd(String name) {
+        String line = null;
+        BufferedReader input = null;
+        try {
+            Process p = Runtime.getRuntime().exec("getprop " + name);
+            input = new BufferedReader(new InputStreamReader(p.getInputStream()), 1024);
+            line = input.readLine();
+            input.close();
+        } catch (IOException ex) {
+            Log.e(TAG, "Unable to read prop " + name, ex);
+            return null;
+        } finally {
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
-        return "";
+        return line;
     }
 }

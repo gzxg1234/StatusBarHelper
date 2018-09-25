@@ -3,6 +3,7 @@ package com.sanron.lib;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -34,7 +35,7 @@ public class StatusBarHelper {
     private static final int KET_HELPER_INSTANCE = R.id.status_bar_fake_view;
     private static final int KEY_FIT = R.id.status_bar_fake_view;
 
-    private Activity mActivity;
+    private Window mWindow;
     private View mFakeStatusView;
     private HelperView mHelperView;
 
@@ -62,39 +63,40 @@ public class StatusBarHelper {
     //保存的状态
     private ArrayMap<String, TagState> mStates = new ArrayMap<>();
 
-
-    /**
-     * 与Activity绑定，会初始化一些参数，绑定后不要在外面修改与沉浸相关的参数
-     *
-     * @param activity
-     * @return
-     */
     public static StatusBarHelper with(Activity activity) {
-        View decorView = activity.getWindow().getDecorView();
+        return with(activity.getWindow());
+    }
+
+    public static StatusBarHelper with(Dialog dialog) {
+        return with(dialog.getWindow());
+    }
+
+    public static StatusBarHelper with(Window window) {
+        View decorView = window.getDecorView();
         Object helper = decorView.getTag(KET_HELPER_INSTANCE);
         if (helper == null) {
             if (overKitkat()) {
-                helper = new StatusBarHelper(activity);
-                ((StatusBarHelper) helper).switchTag((String) null);
+                helper = new StatusBarHelper(window);
+                ((StatusBarHelper) helper).switchTag(null);
             } else {
-                helper = new StatusBarHelperEmpty(activity);
+                helper = new StatusBarHelperEmpty(window);
             }
             decorView.setTag(KET_HELPER_INSTANCE, helper);
         }
         return (StatusBarHelper) helper;
     }
 
-    StatusBarHelper(Activity activity) {
-        mActivity = activity;
+    StatusBarHelper(Window window) {
+        mWindow = window;
         install();
     }
 
     private ViewGroup getDecorView() {
-        return (ViewGroup) mActivity.getWindow().getDecorView();
+        return (ViewGroup) mWindow.getDecorView();
     }
 
     private Window getWindow() {
-        return mActivity.getWindow();
+        return mWindow;
     }
 
     public StatusBarHelper install() {
@@ -323,7 +325,7 @@ public class StatusBarHelper {
     }
 
     private void ensureFakeView() {
-        ViewGroup decorView = (ViewGroup) mActivity.getWindow().getDecorView();
+        ViewGroup decorView = (ViewGroup) mWindow.getDecorView();
         if (mFakeStatusView == null) {
             mFakeStatusView = new View(decorView.getContext());
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -359,7 +361,7 @@ public class StatusBarHelper {
     }
 
     private void addHelperView(ViewGroup decorView) {
-        mHelperView = new HelperView(mActivity);
+        mHelperView = new HelperView(mWindow.getContext());
         mHelperView.setLayoutParams(new ViewGroup.LayoutParams(0, 0));
         decorView.addView(mHelperView, 0);
     }
@@ -408,12 +410,13 @@ public class StatusBarHelper {
         boolean success = false;
         Window window = getWindow();
         if (OSUtil.isFlyme()) {
-            success = MeizuStatusBarHelper.setStatusBarDarkIcon(mActivity, dark);
+            success = MeizuStatusBarHelper.setStatusBarDarkIcon(mWindow, dark);
         } else if (OSUtil.isMiui()) {
             final int miuiVersion = OSUtil.getMiuiVersion();
-            if (miuiVersion >= 6 && miuiVersion < 9) {
-                //miui6开始支持设置状态栏颜色，miui9开始直接使用原生,无法用反射设置
-                success = MiuiStatusBarHelper.setStatusBarDarkMode(mActivity, dark);
+            if ((miuiVersion >= 6 && miuiVersion < 9) ||
+                    (miuiVersion >= 9 && Build.VERSION.SDK_INT < Build.VERSION_CODES.M)) {
+                //miui6-9用miui内部方法设置状态栏文字颜色，miui9(且android版本大等6.0)开始直接使用原生方法
+                success = MiuiStatusBarHelper.setStatusBarDarkMode(mWindow, dark);
             }
         }
         if (overMarshmallow()) {

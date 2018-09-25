@@ -1,6 +1,7 @@
 package com.sanron.lib;
 
 import android.app.Activity;
+import android.view.Window;
 import android.view.WindowManager;
 
 import java.lang.reflect.Field;
@@ -15,6 +16,7 @@ class MeizuStatusBarHelper {
     static {
         try {
             mSetStatusBarDarkIcon = Activity.class.getMethod("setStatusBarDarkIcon", boolean.class);
+            mSetStatusBarDarkIcon.setAccessible(true);
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
@@ -50,16 +52,16 @@ class MeizuStatusBarHelper {
         return false;
     }
 
-    public static boolean setStatusBarDarkIcon(Activity activity, boolean dark) {
-        if (mSetStatusBarDarkIcon != null) {
+    public static boolean setStatusBarDarkIcon(Window window, boolean dark) {
+        if (mSetStatusBarDarkIcon != null && window.getContext() instanceof Activity) {
             try {
-                mSetStatusBarDarkIcon.invoke(activity, dark);
+                mSetStatusBarDarkIcon.invoke(window.getContext(), dark);
                 return true;
             } catch (Throwable e) {
                 e.printStackTrace();
             }
         } else {
-            return changeMeizuFlag(activity.getWindow().getAttributes(),
+            return changeMeizuFlag(window.getAttributes(),
                     "MEIZU_FLAG_DARK_STATUS_BAR_ICON", dark);
         }
         return false;
