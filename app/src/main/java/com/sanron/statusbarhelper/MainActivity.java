@@ -1,10 +1,12 @@
 package com.sanron.statusbarhelper;
 
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 
@@ -12,6 +14,8 @@ import com.flask.colorpicker.ColorPickerView;
 import com.flask.colorpicker.builder.ColorPickerClickListener;
 import com.flask.colorpicker.builder.ColorPickerDialogBuilder;
 import com.sanron.lib.StatusBarHelper;
+
+import java.lang.reflect.Field;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,7 +33,11 @@ public class MainActivity extends AppCompatActivity {
         mSwitchDark.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                StatusBarHelper.with(MainActivity.this).setDarkIcon(0.3f);
+                if(isChecked) {
+                    StatusBarHelper.with(MainActivity.this).setDarkIcon(0.4f);
+                }else{
+                    StatusBarHelper.with(MainActivity.this).setLightIcon();
+                }
             }
         });
     }

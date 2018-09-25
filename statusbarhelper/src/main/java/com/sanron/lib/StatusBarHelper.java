@@ -102,15 +102,6 @@ public class StatusBarHelper {
             return this;
         }
 
-        Window window = getWindow();
-        if (overLollipop()) {
-            //统一由Helper创建View
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(Color.TRANSPARENT);
-        } else if (overKitkat()) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        }
         addHelperView(getDecorView());
         SetFitSystem.install(getWindow());
         mInstalled = true;
@@ -163,9 +154,25 @@ public class StatusBarHelper {
      * @return
      */
     public StatusBarHelper setStatusBarColor(int color) {
+        translucentStatus();
         mStatusBarColor = color;
         updateStatusBarColor(color, mScrimAlpha);
         return this;
+    }
+
+    /**
+     * 统一由本类创建statusBarBackground，方便管理
+     */
+    private void translucentStatus() {
+        if (overLollipop()) {
+            //统一由Helper创建View
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            getWindow().setStatusBarColor(0);
+        } else if (overKitkat()) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        }
+        ViewCompat.requestApplyInsets(getDecorView());
     }
 
 
@@ -175,6 +182,7 @@ public class StatusBarHelper {
      * @param fullScreen true布局延伸到状态栏下
      * @return
      */
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
     public StatusBarHelper setLayoutFullScreen(boolean fullScreen) {
         if (mLayoutFullScreen == fullScreen) {
             return this;
@@ -394,7 +402,7 @@ public class StatusBarHelper {
     /**
      * 设置状态栏暗色图标
      */
-    public boolean setStatusBarDarkIcon(boolean dark) {
+    private boolean setStatusBarDarkIcon(boolean dark) {
         mDarkIcon = dark;
 
         boolean success = false;

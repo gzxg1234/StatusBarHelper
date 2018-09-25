@@ -50,11 +50,6 @@ class StatusBarHelperEmpty extends StatusBarHelper {
     }
 
     @Override
-    public boolean setStatusBarDarkIcon(boolean dark) {
-        return false;
-    }
-
-    @Override
     public StatusBarHelper setLayoutFullScreen(boolean fullScreen) {
         return this;
     }
