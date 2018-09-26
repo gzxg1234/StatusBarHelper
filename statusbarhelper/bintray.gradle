@@ -7,7 +7,7 @@ def NAME = 'StatusBarHelper'
 def REPO = "library"
 def ORG = "sanronjun"
 group = "com.sanron.lib"
-version = "1.0.2"
+version = "1.0.3"
 install {
     repositories.mavenInstaller {
         // This generates POM.xml with proper parameters

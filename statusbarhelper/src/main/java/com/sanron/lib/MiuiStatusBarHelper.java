@@ -1,6 +1,5 @@
 package com.sanron.lib;
 
-import android.app.Activity;
 import android.view.Window;
 
 import java.lang.reflect.Field;
@@ -10,6 +9,8 @@ import java.lang.reflect.Method;
  * MIUI状态栏帮助
  */
 class MiuiStatusBarHelper {
+
+    private static final String TAG = MeizuStatusBarHelper.class.getSimpleName();
 
     public static boolean setStatusBarDarkMode(Window window, boolean darkmode) {
         Class<? extends Window> clazz = window.getClass();
@@ -22,7 +23,7 @@ class MiuiStatusBarHelper {
             extraFlagField.invoke(window, darkmode ? darkModeFlag : 0, darkModeFlag);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            MyLog.d(TAG, "setStatusBarDarkMode error", e);
         }
         return false;
     }

@@ -11,6 +11,9 @@ import java.lang.reflect.Method;
  * Created by wangchende on 15-9-7.
  */
 class MeizuStatusBarHelper {
+
+    private static final String TAG = MeizuStatusBarHelper.class.getSimpleName();
+
     private static Method mSetStatusBarDarkIcon;
 
     static {
@@ -18,7 +21,7 @@ class MeizuStatusBarHelper {
             mSetStatusBarDarkIcon = Activity.class.getMethod("setStatusBarDarkIcon", boolean.class);
             mSetStatusBarDarkIcon.setAccessible(true);
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
+            MyLog.d(TAG, "no setStatusBarDarkIcon method", null);
         }
     }
 
@@ -40,14 +43,8 @@ class MeizuStatusBarHelper {
                 f2.setInt(winParams, meizuFlags);
                 return true;
             }
-        } catch (NoSuchFieldException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
         } catch (Throwable e) {
-            e.printStackTrace();
+            MyLog.d(TAG, "changeMeizuFlag error", e);
         }
         return false;
     }
@@ -58,7 +55,7 @@ class MeizuStatusBarHelper {
                 mSetStatusBarDarkIcon.invoke(window.getContext(), dark);
                 return true;
             } catch (Throwable e) {
-                e.printStackTrace();
+                MyLog.d(TAG, "setStatusBarDarkIcon error", null);
             }
         } else {
             return changeMeizuFlag(window.getAttributes(),

@@ -3,6 +3,7 @@ package com.sanron.lib;
 import android.annotation.SuppressLint;
 import android.os.Build;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -144,7 +145,7 @@ public class OSUtil {
     private static boolean hasProperties(String... keys) {
         for (String key : keys) {
             String value = getProperty(key);
-            if (value != null) {
+            if (!TextUtils.isEmpty(value)) {
                 return true;
             }
         }
@@ -173,7 +174,7 @@ public class OSUtil {
             line = input.readLine();
             input.close();
         } catch (IOException ex) {
-            Log.e(TAG, "Unable to read prop " + name, ex);
+            MyLog.d(TAG, "Unable to read prop " + name, ex);
             return null;
         } finally {
             if (input != null) {
