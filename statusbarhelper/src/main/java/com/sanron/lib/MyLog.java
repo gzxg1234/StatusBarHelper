@@ -11,9 +11,11 @@ public class MyLog {
 
     public static boolean DEBUG = BuildConfig.DEBUG;
 
-    public static void d(String tag,String msg,Throwable e){
+    private static String TAG = "StatusBarHelper";
+
+    public static void d(String msg,Throwable e){
         if(DEBUG){
-            Log.d(tag,msg,e);
+            Log.d(TAG,msg,e);
         }
     }
 }

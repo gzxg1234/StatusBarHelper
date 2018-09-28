@@ -1,6 +1,5 @@
 package com.sanron.lib;
 
-import android.app.Activity;
 import android.view.View;
 import android.view.Window;
 
@@ -15,8 +14,7 @@ class StatusBarHelperEmpty extends StatusBarHelper {
     }
 
     @Override
-    public StatusBarHelper install() {
-        return this;
+    protected void install() {
     }
 
     @Override
@@ -51,7 +49,7 @@ class StatusBarHelperEmpty extends StatusBarHelper {
     }
 
     @Override
-    public StatusBarHelper setLayoutFullScreen(boolean fullScreen) {
+    public StatusBarHelper setLayoutBelowStatusBar(boolean fullScreen) {
         return this;
     }
 

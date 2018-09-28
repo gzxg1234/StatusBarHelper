@@ -6,11 +6,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Rect;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.view.ViewCompat;
@@ -31,36 +27,53 @@ import java.util.List;
  */
 
 public class StatusBarHelper {
-    private static final int FAKE_VIEW_ID = R.id.status_bar_fake_view;
-    private static final int KET_HELPER_INSTANCE = R.id.status_bar_fake_view;
-    private static final int KEY_FIT = R.id.status_bar_fake_view;
+    private static final int FAKE_VIEW_ID = R.id.sbh_status_bar_fake_view;
+    private static final int KET_HELPER_INSTANCE = R.id.sbh_status_bar_fake_view;
+    private static final int KEY_FIT = R.id.sbh_status_bar_fake_view;
+    private static final int TAG_WRAP = R.id.sbh_content_wrap;
 
     private Window mWindow;
     private View mFakeStatusView;
     private HelperView mHelperView;
 
-    //布局是否延伸到状态栏之下(不延伸到导航栏)
-    private boolean mLayoutFullScreen = false;
+    /**
+     * 布局是否延伸到状态栏之下(不延伸到导航栏)
+     */
+    private boolean mLayoutBelowStatusBar = false;
 
-    //状态栏颜色
+    /**
+     * 状态栏颜色
+     */
     private int mStatusBarColor;
 
-    //是否初始化
+    /**
+     * 是否初始化
+     */
     private boolean mInstalled = false;
 
-    //黑色遮罩不透明度
+    /**
+     * 黑色遮罩不透明度
+     */
     private float mScrimAlpha = 0f;
 
-    //是否暗色图标
+    /**
+     * 是否暗色图标
+     */
     private boolean mDarkIcon = false;
 
-    //需要添加padding的view
+    /**
+     * 需要添加padding的view
+     */
     private WeakList<View> mNeedPaddingView = new WeakList<>();
 
-    //需要添加margin的view
+    /**
+     * 需要添加margin的view
+     */
     private WeakList<View> mNeedMarginView = new WeakList<>();
 
-    //保存的状态
+    /**
+     * 保存的参数状态
+     */
     private ArrayMap<String, TagState> mStates = new ArrayMap<>();
 
     public static StatusBarHelper with(Activity activity) {
@@ -77,7 +90,6 @@ public class StatusBarHelper {
         if (helper == null) {
             if (overKitkat()) {
                 helper = new StatusBarHelper(window);
-                ((StatusBarHelper) helper).switchTag(null);
             } else {
                 helper = new StatusBarHelperEmpty(window);
             }
@@ -99,15 +111,55 @@ public class StatusBarHelper {
         return mWindow;
     }
 
-    public StatusBarHelper install() {
+    protected void install() {
         if (mInstalled) {
-            return this;
+            return;
         }
 
         addHelperView(getDecorView());
-        SetFitSystem.install(getWindow());
+        setContentFit();
+        translucentStatus();
+        setStatusBarColor(0xFF000000);
+        setLayoutBelowStatusBar(false);
         mInstalled = true;
-        return this;
+    }
+
+
+    /**
+     * 统一由本类创建statusBarBackground，方便管理
+     */
+    private void translucentStatus() {
+        if (overLollipop()) {
+            //统一由Helper创建View
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            getWindow().setStatusBarColor(0);
+        } else if (overKitkat()) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        }
+    }
+
+    /**
+     * 添加一个FrameLayout消费inset
+     * 修复当View的SystemUiVisibility设置为{@link View#SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN}，
+     * 且inputMode设置为adjustResize时，输入框没有没顶起
+     * 原因在于创建完DecorView后，会调用View.makeOptionalFitsSystemWindows方法，导致view不对inset消费
+     */
+    private void setContentFit() {
+        ViewGroup contentView = getWindow().findViewById(android.R.id.content);
+        if (contentView != null && contentView.getTag(TAG_WRAP) == null) {
+            FrameLayout contentWrap = new FrameLayout(contentView.getContext());
+            contentWrap.setId(R.id.sbh_content_wrap);
+            ViewCompat.setFitsSystemWindows(contentWrap, true);
+
+            ViewGroup contentParent = (ViewGroup) contentView.getParent();
+            contentParent.removeView(contentView);
+            contentParent.addView(contentWrap, contentView.getLayoutParams());
+
+            contentWrap.addView(contentView, ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT);
+            contentView.setTag(TAG_WRAP, new Object());
+        }
     }
 
     /**
@@ -122,7 +174,7 @@ public class StatusBarHelper {
             return this;
         }
         setStatusBarColor(state.statusBarColor);
-        setLayoutFullScreen(state.layoutFullScreen);
+        setLayoutBelowStatusBar(state.belowStatusBar);
         setStatusBarDarkIcon(state.darkIcon);
         setScrimAlpha(state.scrimAlpha);
         return this;
@@ -137,13 +189,19 @@ public class StatusBarHelper {
     public StatusBarHelper saveTag(String tag) {
         TagState tagState = new TagState(tag);
         tagState.darkIcon = mDarkIcon;
-        tagState.layoutFullScreen = mLayoutFullScreen;
+        tagState.belowStatusBar = mLayoutBelowStatusBar;
         tagState.scrimAlpha = mScrimAlpha;
         tagState.statusBarColor = mStatusBarColor;
         mStates.put(tag, tagState);
         return this;
     }
 
+    /**
+     * 移除tag
+     *
+     * @param tag
+     * @return
+     */
     public StatusBarHelper removeTag(String tag) {
         mStates.remove(tag);
         return this;
@@ -156,49 +214,27 @@ public class StatusBarHelper {
      * @return
      */
     public StatusBarHelper setStatusBarColor(int color) {
-        translucentStatus();
         mStatusBarColor = color;
-        updateStatusBarColor(color, mScrimAlpha);
+        updateStatusBarColor(color);
         return this;
     }
 
     /**
-     * 统一由本类创建statusBarBackground，方便管理
-     */
-    private void translucentStatus() {
-        if (overLollipop()) {
-            //统一由Helper创建View
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            getWindow().setStatusBarColor(0);
-        } else if (overKitkat()) {
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        }
-        ViewCompat.requestApplyInsets(getDecorView());
-    }
-
-
-    /**
      * 布局是否延伸到状态栏
      *
-     * @param fullScreen true布局延伸到状态栏下
+     * @param layoutBelowStatusBar true布局延伸到状态栏下
      * @return
      */
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-    public StatusBarHelper setLayoutFullScreen(boolean fullScreen) {
-        if (mLayoutFullScreen == fullScreen) {
-            return this;
-        }
-        mLayoutFullScreen = fullScreen;
-        if (mLayoutFullScreen) {
-            getDecorView().setSystemUiVisibility(getDecorView().getSystemUiVisibility()
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+    public StatusBarHelper setLayoutBelowStatusBar(boolean layoutBelowStatusBar) {
+        mLayoutBelowStatusBar = layoutBelowStatusBar;
+        int uiFlag = getDecorView().getSystemUiVisibility();
+        if (mLayoutBelowStatusBar) {
+            uiFlag = uiFlag | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
         } else {
-            getDecorView().setSystemUiVisibility(getDecorView().getSystemUiVisibility()
-                    & ~(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE));
+            uiFlag = uiFlag & ~(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
+        getDecorView().setSystemUiVisibility(uiFlag);
         ViewCompat.requestApplyInsets(getDecorView());
         return this;
     }
@@ -210,11 +246,8 @@ public class StatusBarHelper {
      * @return
      */
     private StatusBarHelper setScrimAlpha(float alpha) {
-        if (mScrimAlpha == alpha) {
-            return this;
-        }
         mScrimAlpha = alpha;
-        updateStatusBarColor(mStatusBarColor, alpha);
+        updateScrimAlpha(alpha);
         return this;
     }
 
@@ -228,8 +261,8 @@ public class StatusBarHelper {
         if (!mNeedPaddingView.contains(view)) {
             mNeedPaddingView.add(view);
         }
-        if (mLayoutFullScreen && mHelperView.localInsets != null) {
-            setViewPadding(view, mHelperView.localInsets);
+        if (mLayoutBelowStatusBar && mHelperView.mLocalInsets != null) {
+            setViewPadding(view, mHelperView.mLocalInsets);
         }
         return this;
     }
@@ -244,8 +277,8 @@ public class StatusBarHelper {
         if (!mNeedMarginView.contains(view)) {
             mNeedMarginView.add(view);
         }
-        if (mLayoutFullScreen && mHelperView.localInsets != null) {
-            setViewMargin(view, mHelperView.localInsets);
+        if (mLayoutBelowStatusBar && mHelperView.mLocalInsets != null) {
+            setViewMargin(view, mHelperView.mLocalInsets);
         }
         return this;
     }
@@ -275,8 +308,13 @@ public class StatusBarHelper {
         return this;
     }
 
+    /**
+     * 设置marginTop
+     *
+     * @param view
+     * @param rect
+     */
     private void setViewMargin(View view, Rect rect) {
-        //去除设置过的偏移
         removeViewMargin(view);
         if (view.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
             ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
@@ -286,6 +324,11 @@ public class StatusBarHelper {
         view.setTag(KEY_FIT, new Rect(rect));
     }
 
+    /**
+     * 移除marginTop
+     *
+     * @param view
+     */
     private void removeViewMargin(View view) {
         //去除设置过的偏移
         Object tag = view.getTag(KEY_FIT);
@@ -300,6 +343,12 @@ public class StatusBarHelper {
         }
     }
 
+    /**
+     * 设置paddingTop
+     *
+     * @param view
+     * @param rect
+     */
     private void setViewPadding(View view, Rect rect) {
         //去除设置过的偏移
         removeViewPadding(view);
@@ -311,6 +360,11 @@ public class StatusBarHelper {
         view.setTag(KEY_FIT, new Rect(rect));
     }
 
+    /**
+     * 移除paddingTop
+     *
+     * @param view
+     */
     private void removeViewPadding(View view) {
         //去除设置过的偏移
         Object tag = view.getTag(KEY_FIT);
@@ -324,6 +378,9 @@ public class StatusBarHelper {
         }
     }
 
+    /**
+     * 创建StatusBarView
+     */
     private void ensureFakeView() {
         ViewGroup decorView = (ViewGroup) mWindow.getDecorView();
         if (mFakeStatusView == null) {
@@ -333,7 +390,7 @@ public class StatusBarHelper {
             lp.gravity = Gravity.TOP;
             mFakeStatusView.setLayoutParams(lp);
             mFakeStatusView.setId(FAKE_VIEW_ID);
-            mFakeStatusView.setBackgroundDrawable(new FakeDrawable());
+            mFakeStatusView.setBackgroundDrawable(new ScrimDrawable());
             decorView.addView(mFakeStatusView);
         }
     }
@@ -353,11 +410,19 @@ public class StatusBarHelper {
     /**
      * 更新颜色
      */
-    private void updateStatusBarColor(int color, float scrimAlpha) {
+    private void updateStatusBarColor(int color) {
         ensureFakeView();
-        FakeDrawable bg = (FakeDrawable) mFakeStatusView.getBackground();
-        bg.setScrim(scrimAlpha);
+        ScrimDrawable bg = (ScrimDrawable) mFakeStatusView.getBackground();
         bg.setColor(color);
+    }
+
+    /**
+     * 更新遮罩层
+     */
+    private void updateScrimAlpha(float scrimAlpha) {
+        ensureFakeView();
+        ScrimDrawable bg = (ScrimDrawable) mFakeStatusView.getBackground();
+        bg.setScrim(scrimAlpha);
     }
 
     private void addHelperView(ViewGroup decorView) {
@@ -433,24 +498,12 @@ public class StatusBarHelper {
     }
 
 
-    public static boolean overMarshmallow() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
-    }
-
-    public static boolean overKitkat() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
-    }
-
-    public static boolean overLollipop() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
-    }
-
     /**
      * 帮助视图，不显示，处理系统Inset
      */
     private class HelperView extends View {
 
-        Rect localInsets;
+        Rect mLocalInsets;
 
         private HelperView(Context context) {
             super(context);
@@ -469,11 +522,11 @@ public class StatusBarHelper {
         @SuppressWarnings("deprecation")
         @Override
         protected boolean fitSystemWindows(Rect insets) {
-            if (localInsets == null) {
-                localInsets = new Rect();
+            if (mLocalInsets == null) {
+                mLocalInsets = new Rect();
             }
 
-            localInsets.set(insets);
+            mLocalInsets.set(insets);
 
             return applyInsets(insets);
         }
@@ -481,16 +534,16 @@ public class StatusBarHelper {
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
         @Override
         public WindowInsets onApplyWindowInsets(WindowInsets insets) {
-            if (localInsets == null) {
-                localInsets = new Rect();
+            if (mLocalInsets == null) {
+                mLocalInsets = new Rect();
             }
 
-            localInsets.set(insets.getSystemWindowInsetLeft(),
+            mLocalInsets.set(insets.getSystemWindowInsetLeft(),
                     insets.getSystemWindowInsetTop(),
                     insets.getSystemWindowInsetRight(),
                     insets.getSystemWindowInsetBottom());
 
-            final Rect rect = new Rect(localInsets);
+            final Rect rect = new Rect(mLocalInsets);
             if (!applyInsets(rect)) {
                 return insets.replaceSystemWindowInsets(rect);
             } else {
@@ -500,11 +553,10 @@ public class StatusBarHelper {
 
         private boolean applyInsets(Rect insets) {
             updateStatusHeight(insets.top);
-            updateStatusBarColor(mStatusBarColor, mScrimAlpha);
 
             List<View> needPaddingViews = mNeedPaddingView.getLive();
             List<View> needMarginViews = mNeedMarginView.getLive();
-            if (mLayoutFullScreen) {
+            if (mLayoutBelowStatusBar) {
                 for (View view : needPaddingViews) {
                     setViewPadding(view, insets);
                 }
@@ -526,34 +578,10 @@ public class StatusBarHelper {
 
     }
 
-    private static class FakeDrawable extends LayerDrawable {
-
-        public FakeDrawable() {
-            super(createDrawable());
-        }
-
-        private static Drawable[] createDrawable() {
-            Drawable[] layers = new Drawable[2];
-            layers[0] = new ColorDrawable();
-            layers[1] = new ColorDrawable(0);
-            return layers;
-        }
-
-        public void setColor(int color) {
-            ColorDrawable layer1 = (ColorDrawable) getDrawable(0);
-            layer1.setColor(color);
-        }
-
-        public void setScrim(float alpha) {
-            ColorDrawable layer2 = (ColorDrawable) getDrawable(1);
-            layer2.setColor(Color.argb((int) (alpha * 0xFF), 0, 0, 0));
-        }
-    }
-
     private static class TagState {
         private String tag;
 
-        private boolean layoutFullScreen;
+        private boolean belowStatusBar;
 
         private int statusBarColor;
 
@@ -561,8 +589,20 @@ public class StatusBarHelper {
 
         private boolean darkIcon;
 
-        public TagState(String tag) {
+        TagState(String tag) {
             this.tag = tag;
         }
+    }
+
+    private static boolean overMarshmallow() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
+    }
+
+    private static boolean overKitkat() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
+    }
+
+    private static boolean overLollipop() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
     }
 }

@@ -2,17 +2,13 @@ package com.sanron.lib;
 
 import android.annotation.SuppressLint;
 import android.os.Build;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
-import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
-import static android.content.ContentValues.TAG;
 
 /**
  * 系统帮助类
@@ -97,6 +93,7 @@ public class OSUtil {
 
     /**
      * 是否emui3.1
+     *
      * @return
      */
     public static boolean isEMUI3_1() {
@@ -174,7 +171,7 @@ public class OSUtil {
             line = input.readLine();
             input.close();
         } catch (IOException ex) {
-            MyLog.d(TAG, "Unable to read prop " + name, ex);
+            MyLog.d("Unable to read prop " + name, ex);
             return null;
         } finally {
             if (input != null) {

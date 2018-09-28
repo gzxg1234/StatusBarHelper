@@ -21,7 +21,7 @@ class MeizuStatusBarHelper {
             mSetStatusBarDarkIcon = Activity.class.getMethod("setStatusBarDarkIcon", boolean.class);
             mSetStatusBarDarkIcon.setAccessible(true);
         } catch (NoSuchMethodException e) {
-            MyLog.d(TAG, "no setStatusBarDarkIcon method", null);
+            MyLog.d("MeizuStatusBarHelper no setStatusBarDarkIcon method", null);
         }
     }
 
@@ -44,7 +44,7 @@ class MeizuStatusBarHelper {
                 return true;
             }
         } catch (Throwable e) {
-            MyLog.d(TAG, "changeMeizuFlag error", e);
+            MyLog.d("MeizuStatusBarHelper changeMeizuFlag error", e);
         }
         return false;
     }
@@ -55,7 +55,7 @@ class MeizuStatusBarHelper {
                 mSetStatusBarDarkIcon.invoke(window.getContext(), dark);
                 return true;
             } catch (Throwable e) {
-                MyLog.d(TAG, "setStatusBarDarkIcon error", null);
+                MyLog.d("MeizuStatusBarHelper setStatusBarDarkIcon error", null);
             }
         } else {
             return changeMeizuFlag(window.getAttributes(),

@@ -23,7 +23,7 @@ class MiuiStatusBarHelper {
             extraFlagField.invoke(window, darkmode ? darkModeFlag : 0, darkModeFlag);
             return true;
         } catch (Exception e) {
-            MyLog.d(TAG, "setStatusBarDarkMode error", e);
+            MyLog.d("MiuiStatusBarHelper setStatusBarDarkMode error", e);
         }
         return false;
     }
